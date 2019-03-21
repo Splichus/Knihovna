@@ -6,6 +6,8 @@ import com.rohlik.knihovna.repo.VypojckaRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -28,6 +30,11 @@ public class MainController {
         this.vypojckaRepo = vypojckaRepo;
         this.factory = Validation.buildDefaultValidatorFactory();
         this.validator = factory.getValidator();
+    }
+
+    @GetMapping("/")
+    public String home(Model model) {
+        return "home";
     }
 
 }
