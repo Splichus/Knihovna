@@ -12,14 +12,16 @@ public class Vypujcka {
     @Id
     @GeneratedValue
     private Long id;
-    private Date borrowedWhen;
-    private Date returnedWhen;
     @ManyToOne
     User user;
     @ManyToOne
     Book book;
 
+    public Vypujcka() {
+    }
 
-
-
+    public Vypujcka(User user, Book book) {
+        this.user = user;
+        this.book = book;
+    }
 }
