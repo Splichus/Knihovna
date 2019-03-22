@@ -2,10 +2,7 @@ package com.rohlik.knihovna.model;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.ArrayList;
@@ -28,18 +25,5 @@ public class User {
     @NotNull(message = "Chybí heslo")
     String password;
     boolean status;
-    @OneToMany
-    List<Vypujcka> vypujcky;
-
-    public User() {
-        vypujcky = new ArrayList<>();
-    }
-
-    public User(String username, String email, String password) {
-        this();
-        this.username = username;
-        this.email = email;
-        this.password = password;
-    }
 
 }

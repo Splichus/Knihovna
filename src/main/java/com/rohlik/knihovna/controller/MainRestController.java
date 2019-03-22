@@ -7,6 +7,8 @@ import com.rohlik.knihovna.repo.UserRepo;
 import com.rohlik.knihovna.repo.VypujckaRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.ConstraintViolation;
@@ -14,6 +16,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -36,68 +39,84 @@ public class MainRestController {
         this.validator = factory.getValidator();
     }
 
+    //Needs refactoring to avoid the duplicity
     @PostMapping("/rest/newuser")
-    public Confirmation registerUser(@RequestBody User user) {
+    public ResponseEntity<Response> registerUser(@RequestBody User user) {
         log.info("newuser accessed");
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         if (violations.isEmpty()) {
             userRepo.save(user);
             log.info("Exited with success and saved user {}", user.toString());
-            return new Confirmation(201, "User saved");
+            return new ResponseEntity<>(new Response("User saved"), HttpStatus.OK);
         }
         List<String> errors = new ArrayList<>();
         for (ConstraintViolation<User> error : violations) {
             errors.add(error.getMessage());
         }
         log.info("Exited with {} errors recieved from user", errors.size());
-        return new Confirmation(400, "error", errors);
+        return new ResponseEntity<>(new Response("Error(s) while saving", errors), HttpStatus.BAD_REQUEST);
     }
 
     @PostMapping("/rest/newbook")
-    public Confirmation addBook(@RequestBody Book book) {
+    public ResponseEntity<Response> addBook(@RequestBody Book book) {
         log.info("/newbook accessed");
         Set<ConstraintViolation<Book>> violations = validator.validate(book);
         if (violations.isEmpty()) {
             bookRepo.save(book);
             log.info("Exited with succes and saved book {}", book);
-            return new Confirmation(201, "Book Saved");
+            return new ResponseEntity<>(new Response("Book saved"), HttpStatus.OK);
         }
         List<String> errors = new ArrayList<>();
         for (ConstraintViolation<Book> error : violations) {
             errors.add(error.getMessage());
         }
         log.info("Exited with {} errors recieved from user", errors.size());
-        return new Confirmation(400, "error", errors);
+        return new ResponseEntity<>(new Response("Error(s) while saving", errors), HttpStatus.BAD_REQUEST);
 
     }
 
     @PostMapping("/rest/getbook")
-    public Confirmation getBook(@RequestHeader String username, @RequestBody BookRequest title) {
-        if (userRepo.findByUsername(username).isPresent()) {
-            if (bookRepo.findByTitle(title.getBookname()).isPresent()) {
-                vypujckaRepo.save(new Vypujcka(userRepo.findByUsername(username).get(), bookRepo.findByTitle(title.getBookname()).get()));
-                return new Confirmation(201, title + "vypujcena");
+    public ResponseEntity<Response> getBook(@RequestBody BookRequest bookRequest) {
+        log.info("/getbook accessed");
+        if (userRepo.findByUsername(bookRequest.getUsername()).isPresent()) {
+            if (bookRepo.findByTitle(bookRequest.getTitle()).isPresent()) {
+                Vypujcka newVypujcka = new Vypujcka(userRepo.findByUsername(bookRequest.getUsername()).get(), bookRepo.findByTitle(bookRequest.getTitle()).get());
+                vypujckaRepo.save(newVypujcka);
+                User user = findUser(bookRequest.getUsername());
+                user.setStatus(true);
+                userRepo.save(user);
+                return new ResponseEntity<>(new Response(bookRequest.getTitle() + " vypujcena uzivatelem"+bookRequest.getUsername()), HttpStatus.OK);
             }
-            return new Confirmation(400, "kniha" +title+ "nenalezena");
+            return new ResponseEntity<>(new Response("kniha" + bookRequest.getTitle() + "nenalezena"), HttpStatus.BAD_REQUEST);
         }
-        return new Confirmation(400, "uživatel" +username+ "nenalezen");
+        return new ResponseEntity<>(new Response("uživatel" + bookRequest.getUsername() + "nenalezen"), HttpStatus.BAD_REQUEST);
     }
 
-
-    @GetMapping("/rest/getusers")
-    public Users getUsers(){
-        log.info("getusers accessed");
-        List<User> users = new ArrayList<>();
-        userRepo.findAll().forEach(users::add);
-        log.info("Exited /getusers with list of {} users", users.size());
-        return new Users(users);
+    @DeleteMapping("/rest/returnbook")
+    public ResponseEntity<Response> returnBook(@RequestBody BookRequest bookRequest) {
+        log.info("/returnbook accessed");
+        if (vypujckaexists(bookRequest.getUsername(), bookRequest.getTitle())) {
+            Vypujcka vypujcka = findVypujcka(bookRequest.getUsername(), bookRequest.getTitle());
+            vypujckaRepo.delete(vypujcka);
+            User user = findUser(bookRequest.getUsername());
+            if (!vypujckaRepo.findAllByUser(user).isPresent()) {
+                user.setStatus(false);
+                userRepo.save(user);
+                return new ResponseEntity<>(new Response("odevzdano"), HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(new Response("error", Arrays.asList("Wrong user or book")), HttpStatus.BAD_REQUEST);
     }
-    @GetMapping("/resr/getvypujcky")
-    public Vypujcky getVypujcky(){
-        List<Vypujcka> users = new ArrayList<>();
-        vypujckaRepo.findAll().forEach(users::add);
-        log.info("Exited /getusers with list of {} users", users.size());
-        return new Vypujcky(users);
+
+    private boolean vypujckaexists(String username, String title) {
+        return vypujckaRepo.findByUserAndBook(userRepo.findByUsername(username).get(), bookRepo.findByTitle(title).get()).isPresent();
+    }
+
+    private Vypujcka findVypujcka(String username, String title) {
+        return vypujckaRepo.findByUserAndBook(userRepo.findByUsername(username).get(), bookRepo.findByTitle(title).get()).get();
+    }
+    private User findUser(String username) {
+        return userRepo.findByUsername(username).get();
     }
 
 }

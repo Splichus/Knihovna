@@ -5,20 +5,17 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class Confirmation {
+public class Response {
 
-    int status;
     String message;
     List<String> errors;
 
-    public Confirmation(int status, String message, List<String> errors) {
-        this.status = status;
+    public Response(String message, List<String> errors) {
         this.message = message;
         this.errors = errors;
     }
 
-    public Confirmation(int status, String message) {
-        this.status = status;
+    public Response(String message) {
         this.message = message;
     }
 }

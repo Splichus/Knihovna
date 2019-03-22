@@ -87,11 +87,5 @@ public class MainController {
             return "redirect:/main";
         }
     }
-    @GetMapping("/main")
-    public String main(String username) {
-        User activeUser = userRepo.findByUsername(username).get();
-        return "hadoop";
-
-    }
 
 }
