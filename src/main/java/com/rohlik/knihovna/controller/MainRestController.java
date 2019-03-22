@@ -42,7 +42,7 @@ public class MainRestController {
     //Needs refactoring to avoid the duplicity
     @PostMapping("/rest/newuser")
     public ResponseEntity<Response> registerUser(@RequestBody User user) {
-        log.info("newuser accessed");
+        log.info("/newuser accessed");
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         if (violations.isEmpty()) {
             userRepo.save(user);
@@ -85,10 +85,13 @@ public class MainRestController {
                 User user = findUser(bookRequest.getUsername());
                 user.setStatus(true);
                 userRepo.save(user);
+                log.info("Exited with success and lent a book {} to user {}", bookRequest.getTitle(), bookRequest.getUsername());
                 return new ResponseEntity<>(new Response(bookRequest.getTitle() + " vypujcena uzivatelem"+bookRequest.getUsername()), HttpStatus.OK);
             }
+            log.info("Exited with error - book not found");
             return new ResponseEntity<>(new Response("kniha" + bookRequest.getTitle() + "nenalezena"), HttpStatus.BAD_REQUEST);
         }
+        log.info("Exited with error - user not found");
         return new ResponseEntity<>(new Response("uživatel" + bookRequest.getUsername() + "nenalezen"), HttpStatus.BAD_REQUEST);
     }
 
@@ -102,9 +105,11 @@ public class MainRestController {
             if (!vypujckaRepo.findAllByUser(user).isPresent()) {
                 user.setStatus(false);
                 userRepo.save(user);
+                log.info("Exited with success, book {} returned by user {}", bookRequest.getTitle(), bookRequest.getUsername());
                 return new ResponseEntity<>(new Response("odevzdano"), HttpStatus.OK);
             }
         }
+        log.info("Exited with error from user end");
         return new ResponseEntity<>(new Response("error", Arrays.asList("Wrong user or book")), HttpStatus.BAD_REQUEST);
     }
 
