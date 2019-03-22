@@ -24,17 +24,17 @@ import java.util.Set;
 @Controller
 public class MainController {
 
+    @Autowired
     BookRepo bookRepo;
+    @Autowired
     UserRepo userRepo;
+    @Autowired
     VypujckaRepo vypojckaRepo;
     ValidatorFactory factory;
     Validator validator;
 
     @Autowired
-    public MainController(BookRepo bookRepo, UserRepo userRepo, VypujckaRepo vypojckaRepo) {
-        this.bookRepo = bookRepo;
-        this.userRepo = userRepo;
-        this.vypojckaRepo = vypojckaRepo;
+    public MainController() {
         this.factory = Validation.buildDefaultValidatorFactory();
         this.validator = factory.getValidator();
     }
